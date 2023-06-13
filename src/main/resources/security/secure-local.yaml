@@ -1,0 +1,13 @@
+#Local File will be used for Dev
+#e.g.
+#anypoint:   
+#  login:
+#  platform:
+#    organizationId: "![DKDPPR/QxptG/5CBHBDL/zR3FhSq3q+ADSeROnEbaruVGD6ItanW3qaFtmSx/xpU]"
+
+  
+tls:
+ keystore:
+  password: "![QHW09/qN3PLlFUz2uyRLZw==]"
+  keypassword: "![QHW09/qN3PLlFUz2uyRLZw==]"
+

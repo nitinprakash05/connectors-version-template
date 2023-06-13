@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 
+Author: Nitin Prakash
+Date: 07-06-2023 
+-->
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:cloudhub="http://www.mulesoft.org/schema/mule/cloudhub" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:anypoint-mq="http://www.mulesoft.org/schema/mule/anypoint-mq"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd
+http://www.mulesoft.org/schema/mule/cloudhub http://www.mulesoft.org/schema/mule/cloudhub/current/mule-cloudhub.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	
+	
+  
+	<flow name="get-connector-version-flow" doc:id="13899859-7e05-47b4-aac8-cdc9b511c5cf" >
+    <http:listener doc:name="Listener" doc:id="a926231c-ee10-4bac-9f98-46ff6a20b1ba" config-ref="HTTP_Listener_config" path="/pom"/>
+    <logger level="INFO" doc:name="Start Logger" doc:id="31034e4e-e73b-4a68-9330-519fa571475e" message="#['Check if connector version needs to be updated?']"/>
+		<ee:transform doc:name="workingDirectory" doc:id="983eb1e8-7070-43e5-a5ef-7fa8814f9f88" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+app.muleContext.config.workingDirectory]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="projectName" ><![CDATA[%dw 2.0
+output application/json
+
+var projectName = app.name
+
+---
+projectName]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="api name" doc:id="53e0237a-4061-4cbf-ad05-75c0bd450a74" message="#['api name is::  ' ++ vars.projectName]"/>
+		<ee:transform doc:name="vars:pomDependencies" doc:id="0d63597f-31f6-4489-a761-630b4fab7eb3" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="pomDependencies" ><![CDATA[%dw 2.0
+output application/json
+var pomContent = readUrl("classpath://META-INF/maven/com.mycompany/$(vars.projectName)/pom.xml", "xml")
+---
+pomContent
+
+]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+	 	<flow-ref doc:name="retrieve-anypoint-platform-access-token-subflow" doc:id="74a9feed-46b0-4514-ae97-0a72f28998bf" name="retrieve-anypoint-platform-access-token-subflow"/>
+   
+  
+</flow>
+	<sub-flow name="retrieve-anypoint-platform-access-token-subflow" doc:id="de3a25f6-e8b1-4bc3-b59a-24083a43e3c8" >
+		<ee:transform doc:name="Set token request" doc:id="eb3da361-3b88-4f0c-baed-acdb8aa27164">
+		<ee:message>
+								<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "username": p('anypoint.username'),
+    "password": p('anypoint.password')
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="method" ><![CDATA['POST']]></ee:set-variable>
+				<ee:set-variable variableName="requestUriPath" ><![CDATA['https://anypoint.mulesoft.com/accounts/login']]></ee:set-variable>
+			</ee:variables>
+		
+</ee:transform>
+			
+		 
+				<flow-ref doc:name="get-anypoint-platform-access-token-subflow" doc:id="79bb7754-f74f-4a8b-9df6-6cc32a7be5a7" name="get-anypoint-platform-access-token-subflow"/>
+			
+		
+		<set-variable value="#[payload]" doc:name="vars:tokenResponse" doc:id="8f90e5c4-5d1b-477b-837d-4cb1a0cd15d2" variableName="tokenResponse"/>
+		<flow-ref doc:name="anypoint-platform-invocations-subflow" doc:id="59146778-5186-49a4-bb96-56ed876194e6" name="anypoint-platform-invocations-subflow"/>
+	
+</sub-flow>
+	<sub-flow name="get-anypoint-platform-access-token-subflow" doc:id="df7972ac-4f46-42cf-9ce9-ddbaca5623b7" >
+		
+				
+					<set-variable value="tokenKey" doc:name="tokenKey" doc:id="9af9e768-7e7f-476a-b62c-467320ac5e22" variableName="tokenKey"/>
+		<logger level="INFO" doc:name="Call anypoint api to get token" doc:id="452e5d2c-1c85-421a-a10a-4fd85d2407c1" message="#['Call anypoint api to get token from caching']"/>
+		<ee:cache doc:name="Cache Token" doc:id="5924eba4-e6e8-4477-821d-d2ced046a899" cachingStrategy-ref="Caching_Strategy">
+			<logger level="INFO" doc:name="INFO: inside caching strategy" doc:id="a74d0b5c-7397-4d1c-ab4b-59993c6b190d" message="#['inside caching strategy to get token']"/>
+			<http:request method="#[vars.method]" doc:name="Token call" doc:id="57d2a5af-ecfb-4fac-852e-1bd35d46fcd5" config-ref="anypoint-platform-api-token" responseTimeout="30000" url="#[vars.requestUriPath]">
+						
+		</http:request>
+		</ee:cache>
+			
+
+				
+			
+	
+</sub-flow>
+	<sub-flow name="anypoint-platform-invocations-subflow" doc:id="2d732ad1-1d88-4f90-a2ed-bb6b1e3c45ab" >
+		<ee:transform doc:name="vars:dependencyList" doc:id="34b75d10-bb39-4fc0-bc20-1cd9ae221463">
+		<ee:message>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="method" ><![CDATA['GET']]></ee:set-variable>
+				<ee:set-variable variableName="dependencyList" ><![CDATA[(vars.pomDependencies.project.dependencies.*dependency)]]></ee:set-variable>
+			
+</ee:variables>
+		
+</ee:transform>
+		<ee:transform doc:name="vars:arr" doc:id="ba1714ef-2bc7-469e-939a-ef2d5b28ed27" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="arr" ><![CDATA[%dw 2.0
+output application/java
+---
+[]]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Call exchange api to get connector version" doc:id="38c41c3a-c406-4b86-91b8-47d87a04fd89" message="#['Call exchange api to get connector version']"/>
+		<foreach doc:name="For Each" doc:id="b06d171c-0774-4c95-bc47-a168a8132de2" collection="#[vars.dependencyList]">
+			<ee:transform doc:name="vars:requestUriPath" doc:id="15535f8a-baf7-40df-b798-16ac43e9dc95" >
+				<ee:message >
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="requestUriPath" ><![CDATA['https://anypoint.mulesoft.com/exchange/api/v2/assets/' ++ payload.groupId ++ "/" ++ payload.artifactId ++ "/asset"]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<http:request method="#[vars.method]" doc:name="call exchange api" doc:id="e4830d5f-b3b1-4b33-b961-63c4c36df1ee" config-ref="platform-api-invocation" url="#[vars.requestUriPath]">
+				<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer "++ (vars.tokenResponse.access_token  as String default "")
+}]]]></http:headers>
+			</http:request>
+			<ee:transform doc:name="vars:arr" doc:id="3bbe6ce7-f934-4be5-a61b-726d1f6f8815" >
+				<ee:message >
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="arr" ><![CDATA[	%dw 2.0
+output application/java
+---
+vars.arr ++ [payload]]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		</foreach>
+		<ee:transform doc:name="response-payload" doc:id="1060599c-1662-4caa-a304-594bc53b930f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+
+var details = vars.dependencyList  map ((item, index) -> {
+	
+	"connectorName": item.artifactId,
+	"connectorGroupName": item.groupId,
+	"currentVersionInApi": ((item.version replace "\$" with "") replace "}" with "") replace "{" with "" ,
+	"latestVersionInExchange": vars.arr[index].version
+	
+})
+---
+
+details ]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="final response" doc:id="26b5f5ae-08f6-47dc-8550-4533721f9848" message="#['final response for connector version update']"/>
+		<ee:transform doc:name="response-payload" doc:id="c986766b-0d6c-41a1-b097-94f1fd9c58a2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+
+var properties = vars.pomDependencies.project.properties
+
+var resultMap = payload map ((item) -> {
+    "connectorName": item.connectorName,
+	"connectorGroupName": item.connectorGroupName,
+	"currentVersionInApi": properties[item.currentVersionInApi] default item.currentVersionInApi,
+	"latestVersionInExchange": item.latestVersionInExchange
+    
+})
+
+---
+resultMap filter ((item, index) -> item.currentVersionInApi != item.latestVersionInExchange )
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			
+	
+
+
+</sub-flow>
+	
+
+    
+	
+	
+
+
+</mule>

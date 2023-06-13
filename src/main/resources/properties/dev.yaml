@@ -1,0 +1,9 @@
+#properties for the DEV1 environment
+  
+http:
+  host: "0.0.0.0"
+  port: "8091"
+  
+anypoint:
+  username: "little"
+  password:  "@Nitin1993"        

@@ -1,0 +1,11 @@
+#properties for the PROD environment
+
+ 
+http:
+  host: "0.0.0.0"
+  port: "8091"
+  
+anypoint:
+  username: "placeholder"
+  password:  "placeholder"        
+ 

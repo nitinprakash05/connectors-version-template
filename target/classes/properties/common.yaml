@@ -1,0 +1,20 @@
+# Common File to be use in All env
+
+
+#Log Library properties for mask and cut payload lenght 
+#if properties are deleted or empty the funcionality will be turn off
+logSettings:
+  #Values that need to be masked before being logged always in lower keys and split by "," e.g."amount,ssn"
+  maskValues: ""
+  #Number of characters that will be displayed in each log Minimum 500, empty or no property means not filter to apply 
+  maxPayloadLength: "" 
+ 
+test: "111,222"
+batch:
+  status:
+   key: "JOB_STATUS"
+   running: "RUNNING"
+   complete: "COMPLETE" 
+   
+  execution:
+    queue: "execution.queue" 
