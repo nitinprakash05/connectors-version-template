@@ -1,4 +1,4 @@
-# connector-version-template
+# connectors-version-template
 Mulesoft API to read pom file and get list of available new connector version 
 Mule API starter project template
 
