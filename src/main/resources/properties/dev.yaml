@@ -5,5 +5,5 @@ http:
   port: "8091"
   
 anypoint:
-  username: "little"
-  password:  "@Nitin1993"        
+  username: "placeholder"
+  password:  "placeholder"        
